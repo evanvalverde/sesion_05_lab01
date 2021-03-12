@@ -1,0 +1,35 @@
+---
+- name: "Lab 1, Sesion 5: Registros"
+  hosts: nodo01
+  vars:
+    fichero: "/tmp/datos_horarios_{{ ansible_facts['hostname'] }}.txt"
+  
+  tasks:
+    - name: "Guarda la hora (hh:mm:ss) actual en un registro"
+      command: "date +%T"
+      register: hora_pre
+      # Ejecutamos con "ansible-playbook playbook.yml -v" para ver el formato de salida => hora_pre.stdout_lines[0]
+
+    - name: "Cambia la hora del nodo01 a Europe/Moscow y guarda la salida en un registro"
+      timezone:
+        name: Europe/Moscow
+      register: cambio_tz
+ 
+    - name: "Guarda la hora (hh:mm:ss) actual en un registro"
+      command: "date +%T"
+      register: hora_post
+
+    - name: "Escribe en {{ fichero }} la diferencia de horas"
+      blockinfile:
+        path: "{{ fichero }}"
+        create: yes
+        block: |
+          La zona horaria antes del cambio es {{ cambio_tz.diff.before.name }} Y la hora era {{ hora_pre.stdout_lines[0] }}
+          La zona horaria despues del cambio es {{ cambio_tz.diff.after.name }} Y la hora era {{ hora_post.stdout_lines[0] }}
+    
+    - name: "Restaura la zona horaria inicial"
+      timezone:
+        name: "{{ cambio_tz.diff.before.name }}"
+        # Comprobar con
+        # timedatectl | grep "Time zone"
+...
